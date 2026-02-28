@@ -8,7 +8,7 @@ $pass = "kXkVEuHihxdgdFmpkxhmhUDOmrNkmfLz";
 $db   = "railway";
 $port = 3306;
 
-// PRUEBA
+/* PRUEBA
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
@@ -20,9 +20,9 @@ if ($conn->connect_error) {
     die(" Fallo de conexión: " . $conn->connect_error);
 }
 echo " ¡Conexión exitosa!";
-// FIN PRUEBA
+*/ //FIN PRUEBA
 
-$conn = new mysqli($host, $user, $pass, $db, (int)$port);
+$conn = new mysqli($host, $user, $pass, $db, $port);
 
 if ($conn->connect_error) {
     die(json_encode(["status" => "error", "message" => "Conexión fallida"]));
@@ -82,6 +82,7 @@ if ($data) {
 }
 
 ?>
+
 
 
 
