@@ -1,0 +1,69 @@
+<?php
+header("Content-Type: application/json");
+
+// 1. Configuración de conexión 
+$host = "mysql.railway.internal";
+$user = "root";
+$pass = "kXkVEuHihxdgdFmpkxhmhUDOmrNkmfLz";
+$db   = "railway";
+$port = "3306";
+
+$conn = new mysqli($host, $user, $pass, $db, $port);
+
+if ($conn->connect_error) {
+    die(json_encode(["status" => "error", "message" => "Conexión fallida"]));
+}
+
+// 2. Recibir datos JSON de Flutter
+$json = file_get_contents('php://input');
+$data = json_decode($json, true);
+
+if ($data) {
+    $accion = $data['accion'];
+    $uid = $data['id_usuario'];
+
+    if ($accion === 'sync_usuario') {
+        $nombre = $data['nombre'];
+        $foto = $data['foto_url'];
+        $email = $data['email'];
+
+        $sql = "INSERT INTO usuarios_remotos (id_usuario, name, image, email) 
+                VALUES (?, ?, ?, ?) 
+                ON DUPLICATE KEY UPDATE name=?, image=?, email=?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("sssssss", $uid, $nombre, $foto, $email, $nombre, $foto, $email);
+        $stmt->execute();
+    } 
+    
+    else if ($accion === 'sync_categoria') {
+        $id_local = $data['id_local'];
+        $nombre = $data['nombre'];
+        $tipo = $data['tipo'];
+
+        $sql = "INSERT INTO Categorias (id_local_sqlite, id_usuario, nombre, tipo) 
+                VALUES (?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE nombre=VALUES(nombre), tipo=VALUES(tipo)";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("isss", $id_local, $uid, $nombre, $tipo);
+        $stmt->execute();
+    }
+
+    else if ($accion === 'sync_transaccion') {
+        $id_local = $data['id_local'];
+        $desc = $data['descripcion'];
+        $monto = $data['monto'];
+        $fecha = $data['fecha'];
+        $cat_nom = $data['nombre_categoria'];
+        $tipo_t = $data['tipo_transaccion'];
+
+        $sql = "INSERT INTO Transacciones (id_local_sqlite, id_usuario, descripcion, monto, fecha, nombre_categoria, tipo_transaccion) 
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE descripcion=VALUES(descripcion), monto=VALUES(monto)";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("issdsss", $id_local, $uid, $desc, $monto, $fecha, $cat_nom, $tipo_t);
+        $stmt->execute();
+    }
+
+    echo json_encode(["status" => "success", "message" => "Datos procesados"]);
+}
+?>
