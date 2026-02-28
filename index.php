@@ -1,24 +1,26 @@
 <?php
 header("Content-Type: application/json");
 
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-
-echo "El servidor funciona. Intentando conectar...";
-
-$conn = new mysqli("tu_host", "tu_user", "tu_pass", "tu_db", "tu_port");
-
-if ($conn->connect_error) {
-    die(" Fallo de conexión: " . $conn->connect_error);
-}
-echo " ¡Conexión exitosa!";
-
 // 1. Configuración de conexión 
 $host = "mysql.railway.internal";
 $user = "root";
 $pass = "kXkVEuHihxdgdFmpkxhmhUDOmrNkmfLz";
 $db   = "railway";
 $port = 3306;
+
+// PRUEBA
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+
+echo "El servidor funciona. Intentando conectar...";
+
+$conn = new mysqli($host, $user, $pass, $db, $port);
+
+if ($conn->connect_error) {
+    die(" Fallo de conexión: " . $conn->connect_error);
+}
+echo " ¡Conexión exitosa!";
+// FIN PRUEBA
 
 $conn = new mysqli($host, $user, $pass, $db, (int)$port);
 
@@ -80,5 +82,6 @@ if ($data) {
 }
 
 ?>
+
 
 
