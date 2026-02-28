@@ -79,17 +79,33 @@ if ($data) {
         $stmt->execute();
     } 
     else if ($accion === 'delete_transaccion') {
-        $id_local = $data['id_local'];
+        $id_local = (int)$data['id_local']; // Aseguramos que sea entero
+        
         $sql = "DELETE FROM Transacciones WHERE id_local_sqlite = ? AND id_usuario = ?";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("is", $id_local, $uid);
-        $stmt->execute();
+        
+        if ($stmt) {
+            $stmt->bind_param("is", $id_local, $uid);
+            $stmt->execute();
+            
+            // Verificamos si realmente se borró alguna fila
+            if ($stmt->affected_rows > 0) {
+                echo json_encode(["status" => "success", "message" => "Eliminado correctamente"]);
+            } else {
+                echo json_encode(["status" => "warning", "message" => "No se encontró la fila o ya estaba borrada"]);
+            }
+            exit; // Terminamos la ejecución para que no imprima el mensaje final genérico
+        } else {
+            echo json_encode(["status" => "error", "message" => "Error en prepare: " . $conn->error]);
+            exit;
+        }
     }
     
     echo json_encode(["status" => "success", "message" => "Datos procesados"]);
 }
 
 ?>
+
 
 
 
