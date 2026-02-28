@@ -73,38 +73,35 @@ if ($data) {
 
         $sql = "INSERT INTO Transacciones (id_local_sqlite, id_usuario, descripcion, monto, fecha, nombre_categoria, tipo_transaccion, clasificacion) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                ON DUPLICATE KEY UPDATE descripcion=VALUES(descripcion), monto=VALUES(monto), nombre_categoria=VALUES(nombre_categoria), clasificacion=VALUES(clasificacion)";
+                ON DUPLICATE KEY UPDATE 
+                descripcion = VALUES(descripcion), 
+                monto = VALUES(monto), 
+                fecha = VALUES(fecha),
+                nombre_categoria = VALUES(nombre_categoria), 
+                tipo_transaccion = VALUES(tipo_transaccion), 
+                clasificacion = VALUES(clasificacion)";
+        
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("issdssss", $id_local, $uid, $desc, $monto, $fecha, $cat_nom, $tipo_t, $clasif);
         $stmt->execute();
+        echo json_encode(["status" => "success", "message" => "Sincronizado"]);
+        exit; // IMPORTANTE
     } 
     else if ($accion === 'delete_transaccion') {
-        $id_local = (int)$data['id_local']; // Aseguramos que sea entero
-        
+        $id_local = (int)$data['id_local'];
         $sql = "DELETE FROM Transacciones WHERE id_local_sqlite = ? AND id_usuario = ?";
         $stmt = $conn->prepare($sql);
-        
-        if ($stmt) {
-            $stmt->bind_param("is", $id_local, $uid);
-            $stmt->execute();
-            
-            // Verificamos si realmente se borró alguna fila
-            if ($stmt->affected_rows > 0) {
-                echo json_encode(["status" => "success", "message" => "Eliminado correctamente"]);
-            } else {
-                echo json_encode(["status" => "warning", "message" => "No se encontró la fila o ya estaba borrada"]);
-            }
-            exit; // Terminamos la ejecución para que no imprima el mensaje final genérico
-        } else {
-            echo json_encode(["status" => "error", "message" => "Error en prepare: " . $conn->error]);
-            exit;
-        }
+        $stmt->bind_param("is", $id_local, $uid);
+        $stmt->execute();
+        echo json_encode(["status" => "success", "message" => "Eliminado"]);
+        exit; // IMPORTANTE
     }
     
     echo json_encode(["status" => "success", "message" => "Datos procesados"]);
 }
 
 ?>
+
 
 
 
