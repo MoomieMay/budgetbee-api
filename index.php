@@ -8,20 +8,6 @@ $pass = "kXkVEuHihxdgdFmpkxhmhUDOmrNkmfLz";
 $db   = "railway";
 $port = 3306;
 
-/* PRUEBA
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-
-echo "El servidor funciona. Intentando conectar...";
-
-$conn = new mysqli($host, $user, $pass, $db, $port);
-
-if ($conn->connect_error) {
-    die(" Fallo de conexión: " . $conn->connect_error);
-}
-echo " ¡Conexión exitosa!";
-*/ //FIN PRUEBA
-
 $conn = new mysqli($host, $user, $pass, $db, $port);
 
 if ($conn->connect_error) {
@@ -60,6 +46,18 @@ if ($data) {
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("isss", $id_local, $uid, $nombre, $tipo);
         $stmt->execute();
+    }
+
+    else if ($accion === 'delete_categoria') {
+    $id_local = (int)$data['id_local'];
+    
+    $sql = "DELETE FROM Categorias WHERE id_local_sqlite = ? AND id_usuario = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("is", $id_local, $uid);
+    $stmt->execute();
+    
+    echo json_encode(["status" => "success", "message" => "Categoría eliminada"]);
+    exit;
     }
 
     else if ($accion === 'sync_transaccion') {
@@ -103,6 +101,7 @@ if ($data) {
 }
 
 ?>
+
 
 
 
