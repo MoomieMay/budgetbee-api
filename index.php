@@ -20,7 +20,7 @@ $pass = "kXkVEuHihxdgdFmpkxhmhUDOmrNkmfLz";
 $db   = "railway";
 $port = 3306;
 
-$conn = new mysqli($host, $user, $pass, $db, $port);
+$conn = new mysqli($host, $user, $pass, $db, (int)$port);
 
 if ($conn->connect_error) {
     die(json_encode(["status" => "error", "message" => "Conexión fallida"]));
@@ -80,4 +80,5 @@ if ($data) {
 }
 
 ?>
+
 
