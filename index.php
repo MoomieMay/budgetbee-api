@@ -88,11 +88,22 @@ if ($data) {
         echo json_encode(["status" => "success", "message" => "Sincronizado correctamente"]);
         exit; 
     }
+
+    else if ($accion === 'delete_transaccion') {
+        $id_local = (int)$data['id_local'];
+        $sql = "DELETE FROM Transacciones WHERE id_local_sqlite = ? AND id_usuario = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("is", $id_local, $uid);
+        $stmt->execute();
+        echo json_encode(["status" => "success", "message" => "Eliminado"]);
+        exit; // IMPORTANTE
+    }
     
     echo json_encode(["status" => "success", "message" => "Datos procesados"]);
 }
 
 ?>
+
 
 
 
