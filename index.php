@@ -69,19 +69,29 @@ if ($data) {
         $fecha = $data['fecha'];
         $cat_nom = $data['nombre_categoria'];
         $tipo_t = $data['tipo_transaccion'];
+        $clasif = $data['clasificacion'];
 
-        $sql = "INSERT INTO Transacciones (id_local_sqlite, id_usuario, descripcion, monto, fecha, nombre_categoria, tipo_transaccion) 
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-                ON DUPLICATE KEY UPDATE descripcion=VALUES(descripcion), monto=VALUES(monto)";
+        $sql = "INSERT INTO Transacciones (id_local_sqlite, id_usuario, descripcion, monto, fecha, nombre_categoria, tipo_transaccion, clasificacion) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE descripcion=VALUES(descripcion), monto=VALUES(monto), nombre_categoria=VALUES(nombre_categoria), clasificacion=VALUES(clasificacion)";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("issdsss", $id_local, $uid, $desc, $monto, $fecha, $cat_nom, $tipo_t);
+        $stmt->bind_param("issdssss", $id_local, $uid, $desc, $monto, $fecha, $cat_nom, $tipo_t, $clasif);
         $stmt->execute();
+    
+    else if ($accion === 'delete_transaccion') {
+        $id_local = $data['id_local'];
+        $sql = "DELETE FROM Transacciones WHERE id_local_sqlite = ? AND id_usuario = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("is", $id_local, $uid);
+        $stmt->execute();
+}
     }
 
     echo json_encode(["status" => "success", "message" => "Datos procesados"]);
 }
 
 ?>
+
 
 
 
