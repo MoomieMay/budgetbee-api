@@ -1,7 +1,7 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
 
-// 1. Configuración de conexión 
+// Configuración 
 $host = "mysql.railway.internal";
 $user = "root";
 $pass = "kXkVEuHihxdgdFmpkxhmhUDOmrNkmfLz";
@@ -16,7 +16,6 @@ if ($conn->connect_error) {
     die(json_encode(["status" => "error", "message" => "Conexión fallida"]));
 }
 
-// 2. Recibir datos JSON de Flutter
 $json = file_get_contents('php://input');
 $data = json_decode($json, true);
 
@@ -24,6 +23,7 @@ if ($data) {
     $accion = $data['accion'];
     $uid = $data['id_usuario'];
 
+    // --- SINCRONIZACION DE USUARIOS ---
     if ($accion === 'sync_usuario') {
         $nombre = $data['nombre'];
         $foto = $data['foto_url'];
@@ -36,7 +36,8 @@ if ($data) {
         $stmt->bind_param("sssssss", $uid, $nombre, $foto, $email, $nombre, $foto, $email);
         $stmt->execute();
     } 
-    
+
+    // --- METODOS DE CATEGORIAS (NUEVA, ELIMINAR) ---    
     else if ($accion === 'sync_categoria') {
         $id_local = $data['id_local'];
         $nombre = $data['nombre'];
@@ -51,17 +52,18 @@ if ($data) {
     }
 
     else if ($accion === 'delete_categoria') {
-    $id_local = (int)$data['id_local'];
-    
-    $sql = "DELETE FROM Categorias WHERE id_local_sqlite = ? AND id_usuario = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("is", $id_local, $uid);
-    $stmt->execute();
-    
-    echo json_encode(["status" => "success", "message" => "Categoría eliminada"]);
-    exit;
+        $id_local = (int)$data['id_local'];
+        
+        $sql = "DELETE FROM Categorias WHERE id_local_sqlite = ? AND id_usuario = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("is", $id_local, $uid);
+        $stmt->execute();
+        
+        echo json_encode(["status" => "success", "message" => "Categoría eliminada"]);
+        exit;
     }
 
+    // --- METODOS DE TRANSACCIONES (SINCRONIZAR, ELIMINAR) ---    
     else if ($accion === 'sync_transaccion') {
         $id_local = (int)$data['id_local'];
         $desc = $data['descripcion'];
@@ -99,7 +101,7 @@ if ($data) {
         exit; // IMPORTANTE
     }
 
-    // --- NUEVA ACCIÓN PARA DESCARGAR TODO ---
+    // --- DESCARGAR DATOS EXISTENTES ---
     else if ($accion === 'fetch_all') {
         // 1. Consultar Categorías del usuario
         $sqlCat = "SELECT id_local_sqlite as id, id_usuario, nombre, tipo FROM Categorias WHERE id_usuario = ?";
@@ -123,13 +125,36 @@ if ($data) {
             "categorias" => $categorias,
             "transacciones" => $transacciones
         ]);
-        exit; // Cortamos aquí para que no imprima nada más
+        exit; 
     }
+
+    // --- METODOS DE PRESUPUESTOS ---
+    else if ($accion === 'sync_presupuesto') {
+        $uid = $data['id_usuario'];
+        $mes = (int)$data['mes'];
+        $anio = (int)$data['anio'];
+        $monto = (double)$data['monto'];
+    
+        $sql = "INSERT INTO Presupuestos (id_usuario, mes, anio, monto) 
+                VALUES (?, ?, ?, ?) 
+                ON DUPLICATE KEY UPDATE monto = VALUES(monto)";
+        
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("siid", $uid, $mes, $anio, $monto);
+        
+        if($stmt->execute()){
+            echo json_encode(["status" => "success", "message" => "Presupuesto actualizado en la nube"]);
+        } else {
+            echo json_encode(["status" => "error", "message" => $stmt->error]);
+        }
+        exit;
+}
     
     echo json_encode(["status" => "success", "message" => "Datos procesados"]);
 }
 
 ?>
+
 
 
 
