@@ -1,5 +1,5 @@
 <?php
-header("Content-Type: application/json");
+header('Content-Type: application/json; charset=utf-8');
 
 // 1. Configuración de conexión 
 $host = "mysql.railway.internal";
@@ -9,6 +9,8 @@ $db   = "railway";
 $port = 3306;
 
 $conn = new mysqli($host, $user, $pass, $db, $port);
+
+$conn->set_charset("utf8mb4");
 
 if ($conn->connect_error) {
     die(json_encode(["status" => "error", "message" => "Conexión fallida"]));
@@ -128,6 +130,7 @@ if ($data) {
 }
 
 ?>
+
 
 
 
