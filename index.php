@@ -96,11 +96,30 @@ if ($data) {
         echo json_encode(["status" => "success", "message" => "Eliminado"]);
         exit; // IMPORTANTE
     }
+
+    // Levantar datos remotos
+    else if ($accion === 'fetch_all') {
+    // Traemos Categorías
+    $resCat = $conn->query("SELECT id_local_sqlite as id, nombre, tipo FROM Categorias WHERE id_usuario = '$uid'");
+    $categorias = $resCat->fetch_all(MYSQLI_ASSOC);
+
+    // Traemos Transacciones
+    $resTrans = $conn->query("SELECT id_local_sqlite as id, descripcion, monto, fecha, nombre_categoria, tipo_transaccion, clasificacion FROM Transacciones WHERE id_usuario = '$uid'");
+    $transacciones = $resTrans->fetch_all(MYSQLI_ASSOC);
+
+    echo json_encode([
+        "status" => "success", 
+        "categorias" => $categorias, 
+        "transacciones" => $transacciones
+    ]);
+    exit;
+}
     
     echo json_encode(["status" => "success", "message" => "Datos procesados"]);
 }
 
 ?>
+
 
 
 
