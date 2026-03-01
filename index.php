@@ -119,11 +119,19 @@ if ($data) {
         $resTrans = $stmtTrans->get_result();
         $transacciones = $resTrans->fetch_all(MYSQLI_ASSOC);
 
+        // 3. Consultar Presupuestos del usuario
+        $resPresupuestos = $conn->query("SELECT * FROM Presupuestos WHERE id_usuario = '$uid'");
+        $presupuestos = [];
+        while($row = $resPresupuestos->fetch_assoc()) {
+            $presupuestos[] = $row;
+        }
+
         // 3. Enviar respuesta final
         echo json_encode([
             "status" => "success",
             "categorias" => $categorias,
-            "transacciones" => $transacciones
+            "transacciones" => $transacciones,
+            "presupuestos" => $presupuestos
         ]);
         exit; 
     }
@@ -154,6 +162,7 @@ if ($data) {
 }
 
 ?>
+
 
 
 
