@@ -97,28 +97,38 @@ if ($data) {
         exit; // IMPORTANTE
     }
 
-    // Levantar datos remotos
+    // --- NUEVA ACCIÓN PARA DESCARGAR TODO ---
     else if ($accion === 'fetch_all') {
-    // Traemos Categorías
-    $resCat = $conn->query("SELECT id_local_sqlite as id, nombre, tipo FROM Categorias WHERE id_usuario = '$uid'");
-    $categorias = $resCat->fetch_all(MYSQLI_ASSOC);
+        // 1. Consultar Categorías del usuario
+        $sqlCat = "SELECT id_local_sqlite as id, id_usuario, nombre, tipo FROM Categorias WHERE id_usuario = ?";
+        $stmtCat = $conn->prepare($sqlCat);
+        $stmtCat->bind_param("s", $uid);
+        $stmtCat->execute();
+        $resCat = $stmtCat->get_result();
+        $categorias = $resCat->fetch_all(MYSQLI_ASSOC);
 
-    // Traemos Transacciones
-    $resTrans = $conn->query("SELECT id_local_sqlite as id, descripcion, monto, fecha, nombre_categoria, tipo_transaccion, clasificacion FROM Transacciones WHERE id_usuario = '$uid'");
-    $transacciones = $resTrans->fetch_all(MYSQLI_ASSOC);
+        // 2. Consultar Transacciones del usuario
+        $sqlTrans = "SELECT id_local_sqlite as id, id_usuario, descripcion, monto, fecha, nombre_categoria, tipo_transaccion, clasificacion FROM Transacciones WHERE id_usuario = ?";
+        $stmtTrans = $conn->prepare($sqlTrans);
+        $stmtTrans->bind_param("s", $uid);
+        $stmtTrans->execute();
+        $resTrans = $stmtTrans->get_result();
+        $transacciones = $resTrans->fetch_all(MYSQLI_ASSOC);
 
-    echo json_encode([
-        "status" => "success", 
-        "categorias" => $categorias, 
-        "transacciones" => $transacciones
-    ]);
-    exit;
-}
+        // 3. Enviar respuesta final
+        echo json_encode([
+            "status" => "success",
+            "categorias" => $categorias,
+            "transacciones" => $transacciones
+        ]);
+        exit; // Cortamos aquí para que no imprima nada más
+    }
     
     echo json_encode(["status" => "success", "message" => "Datos procesados"]);
 }
 
 ?>
+
 
 
 
