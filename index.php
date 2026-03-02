@@ -1,7 +1,12 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
 
-// Configuración 
+require_once 'firebase_auth.php';
+
+// 🔐 VALIDACIÓN JWT REAL
+$uid = verificarFirebaseJWT();
+
+// Configuración DB
 $host = "mysql.railway.internal";
 $user = "root";
 $pass = "kXkVEuHihxdgdFmpkxhmhUDOmrNkmfLz";
@@ -9,10 +14,10 @@ $db   = "railway";
 $port = 3306;
 
 $conn = new mysqli($host, $user, $pass, $db, $port);
-
 $conn->set_charset("utf8mb4");
 
 if ($conn->connect_error) {
+    http_response_code(500);
     die(json_encode(["status" => "error", "message" => "Conexión fallida"]));
 }
 
@@ -20,148 +25,141 @@ $json = file_get_contents('php://input');
 $data = json_decode($json, true);
 
 if ($data) {
+
     $accion = $data['accion'];
-    $uid = $data['id_usuario'];
 
     // --- SINCRONIZACION DE USUARIOS ---
     if ($accion === 'sync_usuario') {
-        $nombre = $data['nombre'];
-        $foto = $data['foto_url'];
-        $email = $data['email'];
 
         $sql = "INSERT INTO usuarios_remotos (id_usuario, name, image, email) 
                 VALUES (?, ?, ?, ?) 
                 ON DUPLICATE KEY UPDATE name=?, image=?, email=?";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("sssssss", $uid, $nombre, $foto, $email, $nombre, $foto, $email);
-        $stmt->execute();
-    } 
 
-    // --- METODOS DE CATEGORIAS (NUEVA, ELIMINAR) ---    
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param(
+            "sssssss",
+            $uid,
+            $data['nombre'],
+            $data['foto_url'],
+            $data['email'],
+            $data['nombre'],
+            $data['foto_url'],
+            $data['email']
+        );
+        $stmt->execute();
+    }
+
+    // --- CATEGORIAS ---
     else if ($accion === 'sync_categoria') {
-        $id_local = $data['id_local'];
-        $nombre = $data['nombre'];
-        $tipo = $data['tipo'];
 
         $sql = "INSERT INTO Categorias (id_local_sqlite, id_usuario, nombre, tipo) 
                 VALUES (?, ?, ?, ?)
                 ON DUPLICATE KEY UPDATE nombre=VALUES(nombre), tipo=VALUES(tipo)";
+
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("isss", $id_local, $uid, $nombre, $tipo);
+        $stmt->bind_param("isss", $data['id_local'], $uid, $data['nombre'], $data['tipo']);
         $stmt->execute();
     }
 
     else if ($accion === 'delete_categoria') {
-        $id_local = (int)$data['id_local'];
-        
+
         $sql = "DELETE FROM Categorias WHERE id_local_sqlite = ? AND id_usuario = ?";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("is", $id_local, $uid);
+        $stmt->bind_param("is", $data['id_local'], $uid);
         $stmt->execute();
-        
-        echo json_encode(["status" => "success", "message" => "Categoría eliminada"]);
+
+        echo json_encode(["status" => "success"]);
         exit;
     }
 
-    // --- METODOS DE TRANSACCIONES (SINCRONIZAR, ELIMINAR) ---    
+    // --- TRANSACCIONES ---
     else if ($accion === 'sync_transaccion') {
-        $id_local = (int)$data['id_local'];
-        $desc = $data['descripcion'];
-        $monto = (double)$data['monto'];
-        $fecha = $data['fecha'];
-        $cat_nom = $data['nombre_categoria'];
-        $tipo_t = $data['tipo_transaccion'];
-        $clasif = $data['clasificacion'];
 
-        $sql = "INSERT INTO Transacciones (id_local_sqlite, id_usuario, descripcion, monto, fecha, nombre_categoria, tipo_transaccion, clasificacion) 
+        $sql = "INSERT INTO Transacciones 
+                (id_local_sqlite, id_usuario, descripcion, monto, fecha, nombre_categoria, tipo_transaccion, clasificacion) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 ON DUPLICATE KEY UPDATE 
-                descripcion = VALUES(descripcion), 
-                monto = VALUES(monto), 
-                fecha = VALUES(fecha),
-                nombre_categoria = VALUES(nombre_categoria), 
-                tipo_transaccion = VALUES(tipo_transaccion), 
-                clasificacion = VALUES(clasificacion)";
-        
+                    descripcion=VALUES(descripcion),
+                    monto=VALUES(monto),
+                    fecha=VALUES(fecha),
+                    nombre_categoria=VALUES(nombre_categoria),
+                    tipo_transaccion=VALUES(tipo_transaccion),
+                    clasificacion=VALUES(clasificacion)";
+
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("issdssss", $id_local, $uid, $desc, $monto, $fecha, $cat_nom, $tipo_t, $clasif);
+        $stmt->bind_param(
+            "issdssss",
+            $data['id_local'],
+            $uid,
+            $data['descripcion'],
+            $data['monto'],
+            $data['fecha'],
+            $data['nombre_categoria'],
+            $data['tipo_transaccion'],
+            $data['clasificacion']
+        );
         $stmt->execute();
-        
-        echo json_encode(["status" => "success", "message" => "Sincronizado correctamente"]);
-        exit; 
+
+        echo json_encode(["status" => "success"]);
+        exit;
     }
 
     else if ($accion === 'delete_transaccion') {
-        $id_local = (int)$data['id_local'];
+
         $sql = "DELETE FROM Transacciones WHERE id_local_sqlite = ? AND id_usuario = ?";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("is", $id_local, $uid);
+        $stmt->bind_param("is", $data['id_local'], $uid);
         $stmt->execute();
-        echo json_encode(["status" => "success", "message" => "Eliminado"]);
-        exit; // IMPORTANTE
+
+        echo json_encode(["status" => "success"]);
+        exit;
     }
 
-    // --- DESCARGAR DATOS EXISTENTES ---
+    // --- FETCH ALL ---
     else if ($accion === 'fetch_all') {
-        // 1. Consultar Categorías del usuario
-        $sqlCat = "SELECT id_local_sqlite as id, id_usuario, nombre, tipo FROM Categorias WHERE id_usuario = ?";
-        $stmtCat = $conn->prepare($sqlCat);
-        $stmtCat->bind_param("s", $uid);
-        $stmtCat->execute();
-        $resCat = $stmtCat->get_result();
-        $categorias = $resCat->fetch_all(MYSQLI_ASSOC);
 
-        // 2. Consultar Transacciones del usuario
-        $sqlTrans = "SELECT id_local_sqlite as id, id_usuario, descripcion, monto, fecha, nombre_categoria, tipo_transaccion, clasificacion FROM Transacciones WHERE id_usuario = ?";
-        $stmtTrans = $conn->prepare($sqlTrans);
-        $stmtTrans->bind_param("s", $uid);
-        $stmtTrans->execute();
-        $resTrans = $stmtTrans->get_result();
-        $transacciones = $resTrans->fetch_all(MYSQLI_ASSOC);
+        $stmt = $conn->prepare("SELECT id_local_sqlite as id, nombre, tipo FROM Categorias WHERE id_usuario = ?");
+        $stmt->bind_param("s", $uid);
+        $stmt->execute();
+        $categorias = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
-        // 3. Consultar Presupuestos del usuario
-        $resPresupuestos = $conn->query("SELECT * FROM Presupuestos WHERE id_usuario = '$uid'");
-        $presupuestos = [];
-        while($row = $resPresupuestos->fetch_assoc()) {
-            $presupuestos[] = $row;
-        }
+        $stmt = $conn->prepare("SELECT id_local_sqlite as id, descripcion, monto, fecha, nombre_categoria, tipo_transaccion, clasificacion FROM Transacciones WHERE id_usuario = ?");
+        $stmt->bind_param("s", $uid);
+        $stmt->execute();
+        $transacciones = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
-        // 3. Enviar respuesta final
+        $stmt = $conn->prepare("SELECT * FROM Presupuestos WHERE id_usuario = ?");
+        $stmt->bind_param("s", $uid);
+        $stmt->execute();
+        $presupuestos = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+
         echo json_encode([
             "status" => "success",
             "categorias" => $categorias,
             "transacciones" => $transacciones,
             "presupuestos" => $presupuestos
         ]);
-        exit; 
+        exit;
     }
 
-    // --- METODOS DE PRESUPUESTOS ---
+    // --- PRESUPUESTOS ---
     else if ($accion === 'sync_presupuesto') {
-        $uid = $data['id_usuario'];
-        $mes = (int)$data['mes'];
-        $anio = (int)$data['anio'];
-        $monto = (double)$data['monto'];
-    
-        $sql = "INSERT INTO Presupuestos (id_usuario, mes, anio, monto) 
-                VALUES (?, ?, ?, ?) 
+
+        $sql = "INSERT INTO Presupuestos (id_usuario, mes, anio, monto)
+                VALUES (?, ?, ?, ?)
                 ON DUPLICATE KEY UPDATE monto = VALUES(monto)";
-        
+
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("siid", $uid, $mes, $anio, $monto);
-        
-        if($stmt->execute()){
-            echo json_encode(["status" => "success", "message" => "Presupuesto actualizado en la nube"]);
-        } else {
-            echo json_encode(["status" => "error", "message" => $stmt->error]);
-        }
+        $stmt->bind_param("siid", $uid, $data['mes'], $data['anio'], $data['monto']);
+        $stmt->execute();
+
+        echo json_encode(["status" => "success"]);
         exit;
-}
-    
-    echo json_encode(["status" => "success", "message" => "Datos procesados"]);
+    }
+
+    echo json_encode(["status" => "success"]);
 }
 
-?>
 
 
 
