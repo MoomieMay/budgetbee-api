@@ -3,10 +3,7 @@ header('Content-Type: application/json; charset=utf-8');
 
 require_once 'firebase_auth.php';
 
-// 🔐 VALIDACIÓN JWT REAL
 $uid = verificarFirebaseJWT();
-
-//echo json_encode(["uid_detectado" => $uid]);
 
 // Configuración DB
 $host = "mysql.railway.internal";
@@ -119,7 +116,6 @@ if ($data) {
 
     // --- FETCH ALL ---
     else if ($accion === 'fetch_all') {
-
         $stmt = $conn->prepare("SELECT id_local_sqlite as id, nombre, tipo FROM Categorias WHERE id_usuario = ?");
         $stmt->bind_param("s", $uid);
         $stmt->execute();
@@ -139,8 +135,7 @@ if ($data) {
             "status" => "success",
             "categorias" => $categorias,
             "transacciones" => $transacciones,
-            "presupuestos" => $presupuestos,
-            "trans_count" => count($transacciones)
+            "presupuestos" => $presupuestos
         ]);
         exit;
     }
@@ -162,6 +157,7 @@ if ($data) {
 
     echo json_encode(["status" => "success"]);
 }
+
 
 
 
