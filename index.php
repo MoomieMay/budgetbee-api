@@ -7,7 +7,6 @@ require_once 'firebase_auth.php';
 $uid = verificarFirebaseJWT();
 
 echo json_encode(["uid_detectado" => $uid]);
-exit;
 
 // Configuración DB
 $host = "mysql.railway.internal";
@@ -163,6 +162,7 @@ if ($data) {
 
     echo json_encode(["status" => "success"]);
 }
+
 
 
 
