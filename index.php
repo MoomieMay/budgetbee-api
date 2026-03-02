@@ -140,7 +140,8 @@ if ($data) {
             "status" => "success",
             "categorias" => $categorias,
             "transacciones" => $transacciones,
-            "presupuestos" => $presupuestos
+            "presupuestos" => $presupuestos,
+            "trans_count" => count($transacciones)
         ]);
         exit;
     }
@@ -162,6 +163,7 @@ if ($data) {
 
     echo json_encode(["status" => "success"]);
 }
+
 
 
 
