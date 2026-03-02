@@ -1,6 +1,6 @@
 {
     "require": {
         "ext-mysqli": "*",
-        kreait/firebase-php
+        "kreait/firebase-php": "^7.0"
     }
 }
