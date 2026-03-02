@@ -6,7 +6,7 @@ require_once 'firebase_auth.php';
 // 🔐 VALIDACIÓN JWT REAL
 $uid = verificarFirebaseJWT();
 
-echo json_encode(["uid_detectado" => $uid]);
+//echo json_encode(["uid_detectado" => $uid]);
 
 // Configuración DB
 $host = "mysql.railway.internal";
@@ -162,6 +162,7 @@ if ($data) {
 
     echo json_encode(["status" => "success"]);
 }
+
 
 
 
